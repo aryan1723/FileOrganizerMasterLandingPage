@@ -41,11 +41,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const likeCountDisplay = document.getElementById('like-count');
     const likeMsg = document.getElementById('like-msg');
 
+    const BASE_LIKES = 0;
+    const NAMESPACE = 'aryan1723';
+    const KEY = 'fomomaster_real_likes_v1';
+
     // Initial load
-    let currentLikes = parseInt(localStorage.getItem('fomo_likes')) || 1034;
     let hasLiked = localStorage.getItem('fomo_has_liked') === 'true';
 
-    likeCountDisplay.textContent = currentLikes;
+    // Fetch initial count
+    fetch(`https://abacus.jasoncameron.dev/get/${NAMESPACE}/${KEY}`)
+        .then(response => response.json())
+        .then(data => {
+            const count = data.value || 0;
+            likeCountDisplay.textContent = BASE_LIKES + count;
+        })
+        .catch(err => {
+            console.error('Error fetching like count:', err);
+            likeCountDisplay.textContent = BASE_LIKES;
+        });
+
     if (hasLiked) {
         likeBtn.classList.add('liked');
     }
@@ -61,15 +75,21 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Like process
-        currentLikes++;
         hasLiked = true;
-
-        localStorage.setItem('fomo_likes', currentLikes);
         localStorage.setItem('fomo_has_liked', 'true');
-
-        likeCountDisplay.textContent = currentLikes;
         likeBtn.classList.add('liked');
+
+        // Optimistic UI update
+        const currentCount = parseInt(likeCountDisplay.textContent) || BASE_LIKES;
+        likeCountDisplay.textContent = currentCount + 1;
+
+        // Hit API
+        fetch(`https://abacus.jasoncameron.dev/hit/${NAMESPACE}/${KEY}`)
+            .then(response => response.json())
+            .then(data => {
+                likeCountDisplay.textContent = BASE_LIKES + data.value;
+            })
+            .catch(err => console.error('Error incrementing like count:', err));
 
         // Celebration msg
         likeMsg.textContent = "Thanks for the support!";
